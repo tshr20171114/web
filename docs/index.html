@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>鬼畜王 on Web</title>
+    <meta name="description" content="アリスソフトの18禁ゲーム「鬼畜王ランス」等をWebブラウザ上で遊べるようにしたものです。">
+    <link rel="stylesheet" href="lib/spectre.0.5.8.min.css">
+    <link rel="stylesheet" href="lib/font-awesome.4.3.0.min.css">
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="icon.png" type="image/png">
+    <link rel="icon" href="icon.png" type="image/png">
+
+    <link rel="preload" as="font" type="font/woff2" href="lib/fontawesome-webfont.4.3.0.woff2" crossorigin>
+  </head>
+  <body>
+
+  <header id="toolbar" class="before-game-start">
+    <div id="toolbar-handler" class="tooltip tooltip-bottom" data-tooltip="メニュー">
+      <div class="toolbar-handler-icon"></div>
+    </div>
+    <div class="navbar">
+      <section class="navbar-center">
+        <span class="navbar-brand text-ellipsis ml-2">鬼畜王 on Web</span>
+      </section>
+      <section class="navbar-section">
+        <div id="volume-control" class="mr-2 hidden-until-game-start">
+          <i id="volume-control-icon" class="fa fa-volume-up tooltip tooltip-bottom" data-tooltip="ミュート (m)"></i>
+          <input id="volume-control-slider" type="range" class="tooltip tooltip-bottom" data-tooltip="音量">
+        </div>
+
+        <button id="screenshot-button" class="btn btn-link tooltip tooltip-bottom mr-2 hidden-until-game-start hidden-in-narrow-screen" data-tooltip="スクリーンショット (p)"><i class="fa fa-camera"></i></button>
+        <button id="msgskip-button" class="btn btn-link tooltip tooltip-bottom mr-2 hidden-until-game-start" data-tooltip="スキップ (s)"><i class="fa fa-forward"></i></button>
+        <button id="textlog-button" class="btn btn-link tooltip tooltip-bottom mr-2 hidden-until-game-start" data-tooltip="テキスト履歴 (l)"><i class="fa fa-history"></i></button>
+        <button id="settings-button" class="btn btn-link tooltip tooltip-bottom mr-2" data-tooltip="設定"><i class="fa fa-cog"></i></button>
+        <a class="btn btn-link tooltip tooltip-bottom" target="_blank" href="help.html" data-tooltip="ヘルプ"><i class="fa fa-question-circle mr-2"></i></a>
+        <button id="toolbar-close-button" class="btn btn-link"><i class="fa fa-angle-up"></i></button>
+      </section>
+    </div>
+  </header>
+
+  <div class="contents">
+
+    <div id="loader">
+      <div class="language-selector"><a href="en.html">English</a></div>
+      <h1>鬼畜王 on Web</h1>
+      <p>アリスソフトの <a href="https://www.alicesoft.com/about/#cont08">配布フリー宣言</a> に基づいて配布されている「鬼畜王ランス」、「闘神都市II」等のゲームをWebブラウザ上で遊べるようにしたものです。
+      <a target="_blank" href="help.html">遊び方はこちら。</a></p>
+      <p><span class="label label-secondary">2020-12-29</span> 既読スキップ機能を追加しました。</p>
+      <p><strong>(注意) 18歳未満の人は利用できません。</strong></p>
+      <p>ゲームのCDイメージファイルをドラッグ＆ドロップするか、下の「ファイルを選択」ボタンを押して選択してください。</p>
+      <ul class="hidden-while-loading">
+        <li id="imgReady" class="notready" lang="ja">KICHIKUOU.img</li>
+        <li id="cueReady" class="notready" lang="ja">KICHIKUOU.cue</li>
+      </ul>
+      <input type="file" id="fileselect" class="form-input hidden-while-loading" multiple/>
+      <div class="show-while-loading loading loading-lg" hidden></div>
+
+      <div id="unsupported" hidden>
+	このブラウザでは利用できません。
+      </div>
+    </div>
+
+    <div id="xsystem35" hidden>
+      <audio id="audio"></audio>
+      <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div id="settings-modal" class="modal">
+    <div id="settings-overlay" class="modal-overlay"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title">設定</div>
+      </div>
+      <div class="modal-body settings">
+        <section>
+          <h5>表示</h5>
+          <div class="form-group">
+            <span class="mr-2">拡大率:</span>
+            <select id="zoom" class="form-select">
+              <option value="1">100%</option>
+              <option value="1.25">125%</option>
+              <option value="1.5">150%</option>
+              <option value="2">200%</option>
+              <option value="3">300%</option>
+              <option value="fit">自動</option>
+            </select>
+          </div>
+          <div>
+            <label for="pixelate" class="form-checkbox">
+              <input type="checkbox" id="pixelate">
+              <i class="form-icon"></i>拡大時に補間しない
+            </label>
+          </div>
+          <div>
+            <label for="antialias" class="form-checkbox">
+              <input type="checkbox" id="antialias" checked>
+              <i class="form-icon"></i>文字をなめらかに表示する
+            </label>
+          </div>
+        </section>
+        <div class="divider"></div>
+        <section>
+          <h5>メッセージスキップ</h5>
+          <div>
+            <label for="msgskip-skip-unseen" class="form-checkbox">
+              <input type="checkbox" id="msgskip-skip-unseen">
+              <i class="form-icon"></i>未読メッセージもスキップする
+            </label>
+          </div>
+          <div>
+            <label for="msgskip-stop-on-unseen" class="form-checkbox">
+              <input type="checkbox" id="msgskip-stop-on-unseen">
+              <i class="form-icon"></i>未読メッセージで解除する
+            </label>
+          </div>
+          <div>
+            <label for="msgskip-stop-on-menu" class="form-checkbox">
+              <input type="checkbox" id="msgskip-stop-on-menu">
+              <i class="form-icon"></i>選択肢で解除する
+            </label>
+          </div>
+          <div>
+            <label for="msgskip-stop-on-click" class="form-checkbox">
+              <input type="checkbox" id="msgskip-stop-on-click">
+              <i class="form-icon"></i>クリックで解除する
+            </label>
+          </div>
+        </section>
+        <div class="divider"></div>
+        <section>
+          <h5>一般</h5>
+          <div>
+            <label for="unload-confirmation" class="form-checkbox">
+              <input type="checkbox" id="unload-confirmation">
+              <i class="form-icon"></i>ページを閉じる前に確認する
+            </label>
+          </div>
+          <div class="form-group">
+            <span class="mr-2">音源:</span>
+            <select id="synthesizer" class="form-select">
+              <option value="fm">FM音源</option>
+              <option value="midi">MIDI音源</option>
+            </select>
+          </div>
+        </section>
+        <div class="divider"></div>
+        <section>
+          <h5>セーブデータ</h5>
+          <div>
+            <button id="downloadSaveData" class="btn mr-2" disabled>ZIPに保存</button>
+            <button id="uploadSaveData" class="btn">ZIPから復元</button>
+          </div>
+        </section>
+      </div>
+      <div class="modal-footer">
+        <button id="settings-close" class="btn btn-primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Text log -->
+  <div id="textlog-modal" class="modal">
+    <div id="textlog-overlay" class="modal-overlay"></div>
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title">テキスト履歴</div>
+      </div>
+      <pre id="textlog-content" class="modal-body">
+      </pre>
+      <div class="modal-footer">
+        <button id="textlog-close" class="btn btn-primary">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container"></div>
+  <template id="cdda-error">
+    BGMの再生に失敗しました。
+    <button class="btn btn-link cdda-reload-button">imgファイルを再読み込み</button>
+  </template>
+
+  <script type="module" src="shell/shell.js"></script>
+  <script nomodule>
+    unsupported.hidden = false;
+  </script>
+  </body>
+</html>
